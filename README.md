@@ -1,7 +1,7 @@
 # Terrain Sample 
 Terrain Sample using axis.
 
-![image]()
+![image](https://github.com/johnspeny/TerrainSample/blob/main/Resources/hill.png)
 
 
 ### Whats changed and works:
