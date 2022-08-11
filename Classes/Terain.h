@@ -1,57 +1,54 @@
 #ifndef __TERAIN_H__
 #define __TERAIN_H__
 
-#define kMaxHillKeyPoints 1000
-#define kHillSegmentWidth  10
-
-#define kMaxHillVertices  4000
-#define kMaxBorderVertices  800
-
 #include "cocos2d.h"
 #include "renderer/backend/Device.h"
+#include "renderer/backend/Buffer.h"
 
-USING_NS_CC;
+const int kMaxHillKeyPoints = 1000;
+const int kHillSegmentWidth = 10;
+const int kMaxHillVertices = 4000;
+const int kMaxBorderVertices = 800;
 
-class HelloWorld;
-
-class Terain : public cocos2d::Node
+class Terain : public axis::Node
 {
 private:
-	DrawNode* drawCircleNode;
-	Size winSize;
+	axis::Mesh* mesh;
+	std::vector<float> vertices;
+	axis::DrawNode* drawCircleNode;
+	axis::Size winSize;
 
+	int _fromKeyPointI;
+	int _toKeyPointI;
+	int _offsetX;
 	int _nHillVertices;
-	cocos2d::Point _hillVertices[kMaxHillVertices];
-	cocos2d::Point _hillTexCoords[kMaxHillVertices];
-	int _nBorderVertices;
-	cocos2d::Point _borderVertices[kMaxBorderVertices];
 
-	CustomCommand _customCommand;
-	float m_vertexDataCount;
-	backend::UniformLocation _mvpMatrixLocation;
-	backend::UniformLocation _colorLocation;
-	backend::UniformLocation _textureLocation;
+	// store hill points to use
+	axis::Vec2 _hillKeyPoints[kMaxHillKeyPoints];
+
+	// a buffer to store vertex data
+	axis::Point _hillVertices[kMaxHillVertices];
+	axis::Point _hillTexCoords[kMaxHillVertices];
+
+	// for drawing box2d edge shape
+	int _nBorderVertices;
+	axis::Point _borderVertices[kMaxBorderVertices];
 
 public:
 	Terain();
 	~Terain();
 
-	static Terain* createTerain(HelloWorld* _newscene);
+	static Terain* create();
 
-	virtual bool init(HelloWorld* _scene);
-
-	Sprite* _stripes;
+	virtual bool init() override;
+	virtual void draw(axis::Renderer* renderer, const axis::Mat4& transform, uint32_t flags) override;
 
 	void generateHills();
-
-	int _fromKeyPointI;
-	int _toKeyPointI;
-	int _offsetX;
-	Vec2 _hillKeyPoints[kMaxHillKeyPoints];
-
 	void resetHillVertices();
 
-	void draw(cocos2d::Renderer* renderer, const cocos2d::Mat4& transform, uint32_t flags) override;
+	void modern_way_to_generateTriangle();
+
+	void setOffsetX(float newOffsetX);
 };
 
 #endif // !__TERAIN_H__

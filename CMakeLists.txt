@@ -79,13 +79,11 @@ list(APPEND GAME_SOURCE
      Classes/AppDelegate.cpp
      Classes/HelloWorldScene.cpp
      Classes/Terain.cpp
-     Classes/SampleScene.cpp
      )
 list(APPEND GAME_HEADER
      Classes/AppDelegate.h
      Classes/HelloWorldScene.h
      Classes/Terain.h
-     Classes/SampleScene.h
      )
 
 if(ANDROID)

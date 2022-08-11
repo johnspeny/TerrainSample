@@ -1,266 +1,64 @@
 #include "Terain.h"
-#include "HelloWorldScene.h"
 
-Terain::Terain()
+USING_NS_AX;
+
+Terain::Terain() :
+	_offsetX(0),
+	_fromKeyPointI(0),
+	_toKeyPointI(0)
 {
-	_stripes = NULL;
-	_offsetX = 0;
-	_fromKeyPointI = 0;
-	_toKeyPointI = 0;
 }
 
 Terain::~Terain()
 {
-	CC_SAFE_RELEASE_NULL(_stripes);
 }
 
-bool Terain::init(HelloWorld* _scene)
+Terain* Terain::create()
+{
+	auto* obj = new Terain();
+	if (obj->init())
+	{
+		obj->autorelease();
+	}
+	else
+	{
+		CC_SAFE_DELETE(obj);
+	}
+	return obj;
+}
+
+bool Terain::init()
 {
 	if (!Node::init())
 	{
 		return false;
 	}
 
-	_scene->addChild(this);
-
+	// get window/screen size (1280, 720)
 	winSize = Director::getInstance()->getWinSize();
 
+	// circle
 	drawCircleNode = DrawNode::create();
 	this->addChild(drawCircleNode);
 
+	// generate hill points
 	this->generateHills();
+
+	// only draw triangles on hill points that are visible on window/screen
+	// generate vertices to draw triangles
 	this->resetHillVertices();
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <param name="_scene"></param>
-	/// <returns></returns>
+	// modern way to draw triangle from the vertices stored
+	this->modern_way_to_generateTriangle();
 
-	const char* vertexShaderSource = "#version 330 core\n"
-		"layout (location = 0) in vec2 aPos;\n"
-		"layout (location = 1) in vec2 a_texcoord;\n"
-		"out vec2 TexCoord;\n"
-		"uniform mat4 u_MVPMatrix;\n"
-		"void main()\n"
-		"{\n"
-		"   gl_Position = u_MVPMatrix * vec4(aPos, 0.0, 1.0);\n"
-		"   TexCoord = a_texcoord;\n"
-		"}\0";
-
-	const char* fragmentShaderSource = "#version 330 core\n"
-		"out vec4 FragColor;\n"
-		"in vec2 TexCoord;\n"
-		"uniform sampler2D ourTexture;\n"
-		"void main()\n"
-		"{\n"
-		"	FragColor = texture(ourTexture, TexCoord);\n"
-		"}\0";
-
-	//auto program = cocos2d::backend::Device::getInstance()->newProgram(vertexShaderSource, fragmentShaderSource);
-	auto program = backend::Program::getBuiltinProgram(backend::ProgramType::POSITION_TEXTURE_COLOR);
-
-	auto& pipelineDescriptor = _customCommand.getPipelineDescriptor();
-	_programState = new (std::nothrow) backend::ProgramState(program);
-	pipelineDescriptor.programState = _programState;
-
-	auto& vertexLayout = pipelineDescriptor.programState->getVertexLayout();
-	const auto& attributeInfo = _programState->getProgram()->getActiveAttributes();
-	auto iter = attributeInfo.find("a_position");
-	if (iter != attributeInfo.end())
-	{
-		vertexLayout->setAttribute("a_position",
-			iter->second.location,
-			backend::VertexFormat::FLOAT2,
-			0,
-			false);
-	}
-
-	iter = attributeInfo.find("a_texCoord");
-	if (iter != attributeInfo.end())
-	{
-		vertexLayout->setAttribute("a_texCoord",
-			iter->second.location,
-			backend::VertexFormat::FLOAT2,
-			2 * sizeof(float),
-			false);
-	}
-
-	iter = attributeInfo.find("a_color");
-	if (iter != attributeInfo.end())
-	{
-		vertexLayout->setAttribute("a_color",
-			iter->second.location,
-			backend::VertexFormat::UBYTE4,
-			4 * sizeof(float),
-			true);
-	}
-
-	vertexLayout->setLayout(8 * sizeof(float));
-
-	/*
-	@brief get uniforms from program state
-	*/
-	_mvpMatrixLocation = pipelineDescriptor.programState->getUniformLocation("u_MVPMatrix");
-	_textureLocation = pipelineDescriptor.programState->getUniformLocation("u_tex0");
-
-	/*	90, 30,
-	size.width - 90, 30,
-	size.width / 2, size.width - 180
-*/
-
-	float vertices[] = {
-		// positions
-		90.0f, 30.0f,
-		90.0f, 60.0f,
-		180.0f, 180.0f
-	};
-
-	float texV[] = {
-		90.0f, 30.0f,
-		90.0f, 60.0f,
-		180.0f, 180.0f
-	};
-
-	//CCLOG("log it %d", sizeof(vertices));
-
-	/*
-	@brief generate a buffer glGenBuffer(1'how many we need', &buffer'where to store the buffer')
-			glBindBuffer(GL_ARRAY_BUFFER, buffer) which is binding
-			sizeOfVertex : total vertices count in bytes
-			capacity: which is vertext count
-	*/
-	size_t hCount = (sizeof(vertices) / (sizeof(float) * 2));
-
-	CCLOG("hCount %d", hCount);
-
-	//_customCommand.createVertexBuffer(sizeof(vertices), hCount, CustomCommand::BufferUsage::DYNAMIC);
-	_customCommand.createVertexBuffer(sizeof(V2F_C4B_T2F), hCount, CustomCommand::BufferUsage::DYNAMIC);
-
-	//int tCount = sizeof(_hillTexCoords) / 2;
-	////m_vertexDataCount = sizeof(_hillTexCoords) / 2;
-	//_customCommand.createVertexBuffer(sizeof(_hillTexCoords), tCount, CustomCommand::BufferUsage::DYNAMIC);
-
-	m_vertexDataCount = hCount;
-	/*
-	@brief glBufferData(data, size)
-	*/
-	_customCommand.updateVertexBuffer(vertices, sizeof(vertices));
-	//_customCommand.updateVertexBuffer(_hillTexCoords, sizeof(_hillTexCoords));
-	//_customCommand.updateVertexBuffer(vertices, 0, sizeof(vertices));
-	//_customCommand.updateVertexBuffer(vertices, 3 * sizeof(float), sizeof(vertices));
-
-	/*
-	@brief update uniforms
-	*/
-
-	const auto& projectionMat = Director::getInstance()->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
-	_customCommand.getPipelineDescriptor().programState->setUniform(_mvpMatrixLocation, projectionMat.m, sizeof(projectionMat.m));
-
-	/*
-	@brief update colors
-	*/
-	//_customCommand.getPipelineDescriptor().programState->setUniform(_colorLocation, "vec3(1.0, 0.0, 0.0)", 3 * sizeof(float));
-
-	/*
-	@brief texture rendering on shape
-	*/
-
-	auto _texture = Director::getInstance()->getTextureCache()->addImage("lowres-desert-ground.png");
-	_customCommand.getPipelineDescriptor().programState->setUniform(_textureLocation, &_texture, sizeof(_texture));
-	_customCommand.getPipelineDescriptor().programState->setTexture(_textureLocation, 0, _texture->getBackendTexture());
-
-	/*
-	@brief: draw type
-		_customCommand.setPrimitiveType(CustomCommand::PrimitiveType::TRIANGLE_STRIP);
-	*/
-	_customCommand.setDrawType(CustomCommand::DrawType::ARRAY);
-	_customCommand.setPrimitiveType(CustomCommand::PrimitiveType::TRIANGLE);
-
-	/// <summary>
-	///
-	/// </summary>
-	/// <param name="_scene"></param>
-	/// <returns></returns>
+	log("Hello");
 
 	return true;
 }
 
-Terain* Terain::createTerain(HelloWorld* _scene)
+void Terain::draw(axis::Renderer* renderer, const axis::Mat4& transform, uint32_t flags)
 {
-	auto* terain = new Terain();
-	if (terain && terain->init(_scene))
-	{
-		terain->autorelease();
-	}
-	else {
-		CC_SAFE_DELETE(terain);
-	}
-	return terain;
-}
-
-void Terain::generateHills()
-{
-	/*
-	Size winSize = Director::getInstance()->getWinSize();
-	float x = 0;
-	float y = winSize.height / 2;
-	for (int i = 0; i < kMaxHillKeyPoints; ++i)
-	{
-		_hillKeyPoints[i] = Vec2(x, y);
-		x += winSize.width / 2;
-		y = rand() % (int)winSize.height;
-	}*/
-
-	float minDX = 160;
-	int rangeDX = 80; // from 160 to 240
-	float minDY = 60;
-	int rangeDY = 40; // from 60 to 100
-
-	float x = -minDX;
-	float y = winSize.height / 2;
-
-	float dy, ny;
-
-	float sign = 1; // +1: going up, -1: going down
-	float paddingTop = 20;
-	float paddingBottom = 20;
-
-	for (int i = 0; i < kMaxHillKeyPoints; ++i)
-	{
-		_hillKeyPoints[i] = Point(x, y);
-		if (i == 0)
-		{
-			x = 0;
-			y = winSize.height / 2;
-		}
-		else
-		{
-			x += rand() % rangeDX + minDX;
-			while (true)
-			{
-				dy = rand() % rangeDY + minDY;
-				ny = y + dy * sign;
-				if ((sign<0 && (ny + minDY)>(winSize.height - paddingTop))
-					|| (sign > 0 && (ny - minDY) < paddingBottom))
-					continue;
-				if (ny<(winSize.height - paddingTop) && ny >paddingBottom)
-					break;
-			}
-			y = ny;
-		}
-		sign *= -1;
-	}
-}
-
-void Terain::draw(cocos2d::Renderer* renderer, const cocos2d::Mat4& transform, uint32_t flags)
-{
-	_customCommand.init(0);
-	_customCommand.setVertexDrawInfo(0, m_vertexDataCount);
-	//log("drawn");
-	renderer->addCommand(&_customCommand);
-
-	//Node::draw();
+	// draw hill points and lines connecting the hill points
 	glPushMatrix();
 	glLoadMatrixd((GLdouble*)&transform);
 	drawCircleNode->clear();
@@ -289,8 +87,52 @@ void Terain::draw(cocos2d::Renderer* renderer, const cocos2d::Mat4& transform, u
 		}
 	}
 	glPopMatrix();
+}
 
-	// new
+void Terain::generateHills()
+{
+	// algo to generate hill points and store in _hillKeyPoints array
+
+	float minDX = 160;
+	int rangeDX = 80; // from 160 to 240
+	float minDY = 60;
+	int rangeDY = 40; // from 60 to 100
+
+	float x = -minDX;
+	float y = winSize.height / 2;
+
+	float dy, ny;
+
+	float sign = 1; // +1: going up, -1: going down
+	float paddingTop = 20;
+	float paddingBottom = 20;
+
+	for (int i = 0; i < kMaxHillKeyPoints; ++i)
+	{
+		_hillKeyPoints[i] = Point(x, y);
+
+		if (i == 0)
+		{
+			x = 0;
+			y = winSize.height / 2;
+		}
+		else
+		{
+			x += rand() % rangeDX + minDX;
+			while (true)
+			{
+				dy = rand() % rangeDY + minDY;
+				ny = y + dy * sign;
+				if ((sign<0 && (ny + minDY)>(winSize.height - paddingTop))
+					|| (sign > 0 && (ny - minDY) < paddingBottom))
+					continue;
+				if (ny<(winSize.height - paddingTop) && ny >paddingBottom)
+					break;
+			}
+			y = ny;
+		}
+		sign *= -1;
+	}
 }
 
 void Terain::resetHillVertices()
@@ -353,4 +195,69 @@ void Terain::resetHillVertices()
 		prevFromKeyPointI = _fromKeyPointI;
 		prevToKeyPointI = _toKeyPointI;
 	}
+}
+
+void Terain::modern_way_to_generateTriangle()
+{
+	// Triangle
+	auto renderer = MeshRenderer::create();
+
+	int perVertexSizeInFloat = 7;  // 3+4+2
+
+	IndexArray indices;
+	indices.clear(CustomCommand::IndexFormat::U_INT);
+
+	auto InsertVertex = [perVertexSizeInFloat, &indices, this](float x, float y, float z, Color4F col)
+	{
+		unsigned int startindex = vertices.size() / perVertexSizeInFloat;
+		vertices.insert(vertices.end(), {
+			x,y,z, col.r,col.g,col.b,col.a,
+			});
+
+		indices.insert<uint32_t>(indices.size(),
+			ilist_u32_t{ startindex });
+	};
+
+	size_t n = sizeof(_hillVertices) / sizeof(_hillVertices[0]);
+
+	for (int i = 0; i < n; i++)
+	{
+		InsertVertex(_hillVertices[i].x, _hillVertices[i].y, 0, { 1,1,1,1 });
+	}
+
+	std::vector<MeshVertexAttrib> attribs;
+	MeshVertexAttrib att;
+
+	att.type = backend::VertexFormat::FLOAT3;
+	att.vertexAttrib = shaderinfos::VertexKey::VERTEX_ATTRIB_POSITION;
+	attribs.push_back(att);
+
+	att.type = backend::VertexFormat::FLOAT4;
+	att.vertexAttrib = shaderinfos::VertexKey::VERTEX_ATTRIB_COLOR;
+	attribs.push_back(att);
+
+	/*att.type = backend::VertexFormat::FLOAT2;
+	att.vertexAttrib = shaderinfos::VertexKey::VERTEX_ATTRIB_TEX_COORD;
+	attribs.push_back(att);*/
+
+	mesh = Mesh::create(vertices, perVertexSizeInFloat, indices, attribs);
+
+	auto mat = MeshMaterial::createBuiltInMaterial(MeshMaterial::MaterialType::QUAD_COLOR, false);
+	mat->setPrimitiveType(backend::PrimitiveType::TRIANGLE_STRIP);
+	mesh->setMaterial(mat);
+	//mesh->setTexture("lowres-desert-ground.png");
+
+	renderer->addMesh(mesh);
+
+	addChild(renderer);
+}
+
+void Terain::setOffsetX(float newOffsetX)
+{
+	_offsetX = newOffsetX;
+	this->setPosition(Point(-_offsetX * this->getScale(), 0));
+	this->resetHillVertices();
+
+	// Updating the vertex data, but does not work
+	mesh->getMeshIndexData()->getVertexBuffer()->updateData(vertices.data(), vertices.size());
 }

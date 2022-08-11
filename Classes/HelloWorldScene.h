@@ -27,14 +27,14 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
+#include "Terain.h"
 
 class HelloWorld : public axis::Scene
 {
 public:
-    virtual bool init() override;
-
-    // a selector callback
-    void menuCloseCallback(Ref* sender);
+	virtual bool init() override;
+	void update(float dt);
+	Terain* _terain;
 };
 
 #endif  // __HELLOWORLD_SCENE_H__
