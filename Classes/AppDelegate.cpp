@@ -2,7 +2,7 @@
  Copyright (c) 2017-2018 Xiamen Yaji Software Co., Ltd.
  Copyright (c) 2021 Bytedance Inc.
 
- https://adxeproject.github.io/
+ https://axys1.github.io/
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -32,12 +32,12 @@
 #    include "audio/AudioEngine.h"
 #endif
 
-USING_NS_CC;
+USING_NS_AX;
 
-static cocos2d::Size designResolutionSize = cocos2d::Size(1280, 720);
-static cocos2d::Size smallResolutionSize  = cocos2d::Size(480, 320);
-static cocos2d::Size mediumResolutionSize = cocos2d::Size(1024, 768);
-static cocos2d::Size largeResolutionSize  = cocos2d::Size(2048, 1536);
+static axis::Size designResolutionSize = axis::Size(1280, 720);
+static axis::Size smallResolutionSize  = axis::Size(480, 320);
+static axis::Size mediumResolutionSize = axis::Size(1024, 768);
+static axis::Size largeResolutionSize  = axis::Size(2048, 1536);
 
 AppDelegate::AppDelegate() {}
 
@@ -70,9 +70,9 @@ bool AppDelegate::applicationDidFinishLaunching()
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC) || \
     (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
         glview = GLViewImpl::createWithRect(
-            "TerainSample", cocos2d::Rect(0, 0, designResolutionSize.width, designResolutionSize.height));
+            "TerrainSample", axis::Rect(0, 0, designResolutionSize.width, designResolutionSize.height));
 #else
-        glview = GLViewImpl::create("TerainSample");
+        glview = GLViewImpl::create("TerrainSample");
 #endif
         director->setOpenGLView(glview);
     }
