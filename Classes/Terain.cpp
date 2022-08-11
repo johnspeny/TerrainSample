@@ -243,14 +243,17 @@ void Terain::modern_way_to_generateTriangle()
 	att.vertexAttrib = shaderinfos::VertexKey::VERTEX_ATTRIB_TEX_COORD;
 	attribs.push_back(att);*/
 
-	mesh = Mesh::create(vertices, perVertexSizeInFloat, indices, attribs);
+	auto mesh = Mesh::create(vertices, perVertexSizeInFloat, indices, attribs);
 
 	auto mat = MeshMaterial::createBuiltInMaterial(MeshMaterial::MaterialType::QUAD_COLOR, false);
 	mat->setPrimitiveType(backend::PrimitiveType::TRIANGLE_STRIP);
 	mesh->setMaterial(mat);
 	//mesh->setTexture("lowres-desert-ground.png");
 
-	renderer->addMesh(mesh);
+	renderer->addMesh(mesh); 
+	
+	vertexBuf = mesh->getMeshIndexData()->getIndexBuffer();
+	indexBuf = mesh->getMeshIndexData()->getVertexBuffer();
 
 	addChild(renderer);
 }
@@ -262,6 +265,6 @@ void Terain::setOffsetX(float newOffsetX)
 	this->resetHillVertices();
 	this->updateVerticesIndices();
 
-	mesh->getMeshIndexData()->getIndexBuffer()->updateData(indices.data(), indices.size());
-	mesh->getMeshIndexData()->getVertexBuffer()->updateData(vertices.data(), vertices.size());
+	vertexBuf->updateData(indices.data(), indices.size());
+	indexBuf->updateData(vertices.data(), vertices.size());
 }
