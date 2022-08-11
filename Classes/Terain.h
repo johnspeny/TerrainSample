@@ -13,9 +13,11 @@ const int kMaxBorderVertices = 800;
 class Terain : public axis::Node
 {
 private:
-	axis::Mesh* mesh;
 	axis::IndexArray indices;
 	std::vector<float> vertices;
+	axis::backend::Buffer* vertexBuf;
+	axis::backend::Buffer* indexBuf;
+
 	axis::DrawNode* drawCircleNode;
 	axis::Size winSize;
 
