@@ -14,6 +14,7 @@ class Terain : public axis::Node
 {
 private:
 	axis::Mesh* mesh;
+	axis::IndexArray indices;
 	std::vector<float> vertices;
 	axis::DrawNode* drawCircleNode;
 	axis::Size winSize;
@@ -34,6 +35,8 @@ private:
 	int _nBorderVertices;
 	axis::Point _borderVertices[kMaxBorderVertices];
 
+	int perVertexSizeInFloat = 7;  // 3+4+2
+
 public:
 	Terain();
 	~Terain();
@@ -45,6 +48,7 @@ public:
 
 	void generateHills();
 	void resetHillVertices();
+	void updateVerticesIndices();
 
 	void modern_way_to_generateTriangle();
 
