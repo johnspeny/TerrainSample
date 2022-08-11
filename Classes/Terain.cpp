@@ -156,7 +156,7 @@ void Terain::resetHillVertices()
 		// vertices for visible area
 		_nHillVertices = 0;
 		_nBorderVertices = 0;
-		Point p0, p1, pt0, pt1;
+		Vec2 p0, p1, pt0, pt1;
 		p0 = _hillKeyPoints[_fromKeyPointI];
 		for (int i = _fromKeyPointI + 1; i < _toKeyPointI + 1; ++i)
 		{
@@ -197,17 +197,12 @@ void Terain::resetHillVertices()
 	}
 }
 
-void Terain::modern_way_to_generateTriangle()
+void Terain::updateVerticesIndices()
 {
-	// Triangle
-	auto renderer = MeshRenderer::create();
-
-	int perVertexSizeInFloat = 7;  // 3+4+2
-
-	IndexArray indices;
+	vertices.clear();
 	indices.clear(CustomCommand::IndexFormat::U_INT);
 
-	auto InsertVertex = [perVertexSizeInFloat, &indices, this](float x, float y, float z, Color4F col)
+	auto InsertVertex = [this](float x, float y, float z, Color4F col)
 	{
 		unsigned int startindex = vertices.size() / perVertexSizeInFloat;
 		vertices.insert(vertices.end(), {
@@ -224,6 +219,14 @@ void Terain::modern_way_to_generateTriangle()
 	{
 		InsertVertex(_hillVertices[i].x, _hillVertices[i].y, 0, { 1,1,1,1 });
 	}
+}
+
+void Terain::modern_way_to_generateTriangle()
+{
+	// Triangle
+	auto renderer = MeshRenderer::create();
+
+	updateVerticesIndices();
 
 	std::vector<MeshVertexAttrib> attribs;
 	MeshVertexAttrib att;
@@ -257,7 +260,8 @@ void Terain::setOffsetX(float newOffsetX)
 	_offsetX = newOffsetX;
 	this->setPosition(Point(-_offsetX * this->getScale(), 0));
 	this->resetHillVertices();
+	this->updateVerticesIndices();
 
-	// Updating the vertex data, but does not work
+	mesh->getMeshIndexData()->getIndexBuffer()->updateData(indices.data(), indices.size());
 	mesh->getMeshIndexData()->getVertexBuffer()->updateData(vertices.data(), vertices.size());
 }
